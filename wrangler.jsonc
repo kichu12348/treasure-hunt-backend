@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "tresure-backend",
   "main": "src/index.ts",
-  "compatibility_date": "2025-06-15",
+  "compatibility_date": "2025-06-04",
   "account_id": "4024e2c1a66760abdd6b2161bcddfd94",
   "compatibility_flags": [
     "nodejs_compat"

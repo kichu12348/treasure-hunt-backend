@@ -10,11 +10,12 @@ type Env = {
   DB: D1Database;
 };
 
-const schema =
-  `CREATE TABLE IF NOT EXISTS users (name TEXT NOT NULL, email TEXT NOT NULL UNIQUE PRIMARY KEY, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);`;
+const schema = `CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL, email TEXT NOT NULL UNIQUE, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);`;
 
 app.get("/", (c) => {
-  return c.text("Hello World! dis is kichu from tressure-backend hehehe im everywhere because of this edge network");
+  return c.text(
+    "Hello World! dis is kichu from tressure-backend hehehe im everywhere because of this edge network"
+  );
 });
 
 app.post("/submit", async (c) => {
@@ -35,23 +36,48 @@ app.post("/submit", async (c) => {
         .prepare("INSERT INTO users (name, email) VALUES (?, ?)")
         .bind(name, email)
         .run();
-      return c.json({ isFirst: true }, 201);
+      return c.json({ isFirst: true, position: 1 }, 201);
     }
     const existingUser = await db
       .prepare("SELECT * FROM users WHERE email = ?")
       .bind(email)
       .first();
     if (existingUser) {
-      return c.json({ error: "There is already a submission with this email." }, 400);
+      return c.json(
+        { error: "There is already a submission with this email." },
+        400
+      );
     }
     await db
       .prepare("INSERT INTO users (name, email) VALUES (?, ?)")
       .bind(name, email)
       .run();
-    return c.json({ isFirst: false }, 201);
+    const position = await db
+      .prepare(
+        "SELECT id FROM users WHERE email = ?"
+      )
+      .bind(email)
+      .first();
+    return c.json(
+      {
+        isFirst: false,
+        position: position ? (position.id as number) : 1,
+      },
+      201
+    );
   } catch (error) {
-    console.error("Error inserting user:", error);
-    return c.json({ error: "Internal server error: " + (error as Error).message }, 500);
+    console.log(
+      "Error inserting user:",
+      error instanceof Error ? error.message : String(error)
+    );
+    return c.json(
+      {
+        error:
+          "Internal server error: " +
+          (error instanceof Error ? error.message : String(error)),
+      },
+      500
+    );
   }
 });
 
@@ -62,7 +88,10 @@ app.get("/users", async (c) => {
     return c.json(result.results);
   } catch (error) {
     console.error("Error fetching users:", error);
-    return c.json({ error: "Internal server error: " + (error as Error).message }, 500);
+    return c.json(
+      { error: "Internal server error: " + (error as Error).message },
+      500
+    );
   }
 });
 
@@ -70,7 +99,7 @@ app.get("/users/:email", async (c) => {
   const email = c.req.param("email");
   if (!email) {
     return c.json({ error: "Email is required." }, 400);
-  } 
+  }
   try {
     const db = c.env.DB;
     const user = await db
@@ -83,20 +112,29 @@ app.get("/users/:email", async (c) => {
     return c.json(user);
   } catch (error) {
     console.error("Error fetching user:", error);
-    return c.json({ error: "Internal server error: " + (error as Error).message }, 500);
+    return c.json(
+      { error: "Internal server error: " + (error as Error).message },
+      500
+    );
   }
 });
 
-// app.get("/init", async (c) => {
-//   try {
-//     const db = c.env.DB;
-//     await db.exec(schema);
-//     return c.json({ message: "Database initialized successfully." });
-//   } catch (error) {
-//     console.error("Error initializing database:", error);
-//     return c.json({ error: "Internal server error: " + (error as Error).message }, 500);
-//   }
-// });
+app.get("/init-db", async (c) => {
+  try {
+    const db = c.env.DB;
+    await db.exec(schema);
+    await db.prepare("DROP TABLE IF EXISTS users").run(); // Clear existing data
+    return c.json({
+      message: "Database initialized successfully and cleared all data",
+    });
+  } catch (error) {
+    console.error("Error initializing database:", error);
+    return c.json(
+      { error: "Internal server error: " + (error as Error).message },
+      500
+    );
+  }
+});
 
 app.get("/winner", async (c) => {
   try {
@@ -110,7 +148,10 @@ app.get("/winner", async (c) => {
     return c.json(winner);
   } catch (error) {
     console.error("Error fetching winner:", error);
-    return c.json({ error: "Internal server error: " + (error as Error).message }, 500);
+    return c.json(
+      { error: "Internal server error: " + (error as Error).message },
+      500
+    );
   }
 });
 
