@@ -125,6 +125,7 @@ app.get("/init-db", async (c) => {
     await db.exec(schema);
     await db.prepare("DROP TABLE IF EXISTS users").run(); // Clear existing data
     await db.exec(schema); // Recreate the table
+    await db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_email ON users (email)"); // Ensure unique email index
     return c.json({
       message: "Database initialized successfully and cleared all data",
     });
